@@ -18,5 +18,6 @@ module.exports = {
     'import/no-unresolved': 0,
     'import/extensions': 0,
     'no-shadow': 0,
+    'no-plusplus': 0,
   },
 };

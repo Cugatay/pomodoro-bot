@@ -74,8 +74,6 @@ client.on('message', async (msg) => {
         channel = newChannel;
       }
 
-      msg.reply('okeyy');
-
       const mainIntervalFunction = async () => {
         const timer = channel?.timers[channel.timers.length - 1];
 
@@ -149,7 +147,7 @@ client.on('message', async (msg) => {
       };
       let inter = setInterval(mainIntervalFunction, 15000);
 
-      const counterMessage = await msg.channel.send('Pomodoro 25:00');
+      const counterMessage = await msg.channel.send('Pomodoro Başladı! `25:00`');
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
 
@@ -157,8 +155,6 @@ client.on('message', async (msg) => {
         const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
         const remainder = channel?.timers[channel.timers.length - 1].pomodoroCount! !== 0
         && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
-        console.log('remainder: ', remainder);
-        console.log('pomodoro count: ', channel?.timers[channel.timers.length - 1].pomodoroCount);
 
         if (!isFinished) {
           if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
@@ -166,7 +162,7 @@ client.on('message', async (msg) => {
             willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : remainder ? 15 : 5, 'minutes').toDate().getTime();
           }
           const remaining = willFinish - Date.now();
-          counterMessage.edit(`${mode} ${moment(remaining).minute()}:${moment(remaining).second()}`);
+          counterMessage.edit(`${mode === 'pomodoro' ? 'Pomodoro Başladı!' : 'Mola Başladı!'} \`${moment(remaining).minute()}:${moment(remaining).second()}\``);
         } else {
           clearInterval(counterInterval);
         }
@@ -226,9 +222,9 @@ client.on('message', async (msg) => {
       // \`!ptdevam:\` Duraklamış zamanlayıcıyı devam ettir
       // \`!ptstat:\` Bugün, bu hafta ve hatta bu ay ne kadar çalıştığını gör! Eğer devam eden bir zamanlayıcı varsa kaç saattir çalıştığını, kaç pomodoro bitirdiğini, ne kadar ara verdiğini görebilirsin!
 
-      const exampleEmbed = new Discord.MessageEmbed()
+      const embedMessage = new Discord.MessageEmbed()
         .setColor('#0099ff')
-        .setAuthor('PT Bot', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+        .setAuthor('PT Bot', 'https://i.imgur.com/wSTFkRM.png')
         .setTitle('İşte Bütün Komutlar')
         .setDescription(`
 \`!ptbasla :\`  Yeni bir sayaç başlat
@@ -237,7 +233,108 @@ client.on('message', async (msg) => {
 \`!ptgecen :\`  Kaç dakika geçtiğine bak
 \`!ptyardim:\`  Bence bunun ne olduğunu zaten biliyorsun :)
         `);
-      msg.channel.send(exampleEmbed);
+      msg.channel.send(embedMessage);
+    } else if (command === 'stat') {
+      const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
+
+      if (!channel) {
+        msg.channel.send('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        return;
+      }
+
+      const lastTimer = channel.timers[channel.timers.length - 1];
+
+      if (!lastTimer) {
+        msg.channel.send('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        return;
+      }
+
+      interface Times {
+        day: number;
+        week: number;
+        month: number;
+      }
+
+      const pomodoroTime: Times = {
+        day: 0,
+        week: 0,
+        month: 0,
+      };
+      const breakTime: Times = {
+        day: 0,
+        week: 0,
+        month: 0,
+      };
+
+      const todayDate = new Date();
+      for (let i = 0; i < channel.timers.length; i++) {
+        const timer = channel.timers[i];
+
+        const isToday = moment(timer.startedAt).isSame(todayDate, 'day');
+        const isWeek = moment(timer.startedAt).isSame(todayDate, 'week');
+        const isMonth = moment(timer.startedAt).isSame(todayDate, 'month');
+
+        const ptime = timer.pomodoroCount * 25;
+        const btime = ((timer.breakCount - Math.trunc(timer.breakCount / 4)) * 5) + (Math.trunc(timer.breakCount / 4)) * 15;
+
+        console.log('-----------------------');
+        console.log(timer.pomodoroCount);
+        console.log(timer.breakCount);
+        console.log('------0000-----');
+        console.log(Math.trunc(timer.breakCount / 4));
+        console.log('-----------------------');
+
+        if (isToday) {
+          pomodoroTime.day += ptime;
+          breakTime.day += btime;
+        }
+        if (isWeek) {
+          pomodoroTime.week += ptime;
+          breakTime.week += btime;
+        }
+        if (isMonth) {
+          pomodoroTime.month += ptime;
+          breakTime.month += btime;
+        }
+      }
+
+      const todayStudy = lastTimer.finishedAt ? null : {
+        pomodoroTime: lastTimer.pomodoroCount * 25,
+        breakTime: ((lastTimer.breakCount - Math.trunc(lastTimer.breakCount / 4)) * 5) + (Math.trunc(lastTimer.breakCount / 4)) * 15,
+      };
+      console.log('-----------------------------------');
+      console.log(pomodoroTime);
+      console.log('000000000000000000000000');
+      console.log(breakTime);
+      console.log('000000000000000000000000');
+      console.log(todayStudy);
+      console.log('-----------------------------------');
+
+      msg.channel.send(`
+${todayStudy ? todayStudy.pomodoroTime !== 0 ? `
+**-** Şuan Hala Çalışıyorsun ve \`${lastTimer.pomodoroCount} Set Pomodoro\` Bitirdin!
+      -> \`${todayStudy.pomodoroTime} Dakika\` Pomodoro Yaptın -- \`${lastTimer.pomodoroCount} Pomodoro\`
+      -> \`${todayStudy.breakTime} Dakika\` Mola Verdin -- \`${lastTimer.breakCount} Mola\`
+**-> Toplamda ${todayStudy.pomodoroTime + todayStudy.breakTime} Saattir Çalışıyorsun! <-**
+` : `
+**-** \`Şuan Hala Çalışıyorsun, İlk Pomodoronu Bitirince Ne Kadar Çalıştığını Buradan Görebileceksin! Böyle Devam!\`
+` : ''}
+${pomodoroTime.day ? `
+**-** Bugün **${pomodoroTime.day + breakTime.day}** Saat Çalıştın
+      -> \`${pomodoroTime.day}\` Saat pomodoro
+      -> \`${breakTime.day}\` Saat mola
+` : ''}
+${pomodoroTime.week ? `
+**-** Bu Hafta **${pomodoroTime.week + breakTime.week}** Saat Çalıştın
+      -> \`${pomodoroTime.week}\` Saat pomodoro
+      -> \`${breakTime.week}\` Saat mola
+` : ''}
+${pomodoroTime.month ? `
+**-** Bu Ay **${pomodoroTime.month + breakTime.month}** Saat Çalıştın
+      -> \`${pomodoroTime.month}\` Saat Pomodoro
+      -> \`${breakTime.month}\` Saat Mola
+` : ''}
+      `);
     } else {
       msg.channel.send('Yanlış bir komut girdin. Eğer kaybolmuş hissediyorsan `!ptyardim` yazarak yardım alabilirsin!');
     }
