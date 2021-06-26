@@ -26,7 +26,7 @@ mongoose.connect(MONGO_DB_URL!, {
 }, (err) => {
   if (err) throw err;
 
-  console.log('Mongoose connected successfully!');
+  console.info('Mongoose connected successfully!');
 });
 
 client.on('ready', () => {
@@ -36,16 +36,13 @@ client.on('ready', () => {
 client.on('message', async (msg) => {
   if (msg.author.bot) return;
   if (msg.content.startsWith(PREFIX!)) {
-    const [command] = msg.content /* , ...args */
+    const [command] = msg.content
       .trim()
       .substring(PREFIX!.length)
       .split(/\s+/);
 
-    // const studyTime = Number(args[0]) || 25;
-    // console.log('sttime', studyTime);
-
     // ALL COMMANDS
-    if (command === 'basla') { // StartTimer(msg);
+    if (command === 'basla') {
       let channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
       const newTimer = {
@@ -174,6 +171,8 @@ client.on('message', async (msg) => {
       channel?.save();
 
       msg.reply('ok');
+    } else if (command === 'duraklat') {
+      msg.reply('ok');
     } else if (command === 'kalan') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
@@ -277,13 +276,6 @@ client.on('message', async (msg) => {
         const ptime = timer.pomodoroCount * 25;
         const btime = ((timer.breakCount - Math.trunc(timer.breakCount / 4)) * 5) + (Math.trunc(timer.breakCount / 4)) * 15;
 
-        console.log('-----------------------');
-        console.log(timer.pomodoroCount);
-        console.log(timer.breakCount);
-        console.log('------0000-----');
-        console.log(Math.trunc(timer.breakCount / 4));
-        console.log('-----------------------');
-
         if (isToday) {
           pomodoroTime.day += ptime;
           breakTime.day += btime;
@@ -302,13 +294,6 @@ client.on('message', async (msg) => {
         pomodoroTime: lastTimer.pomodoroCount * 25,
         breakTime: ((lastTimer.breakCount - Math.trunc(lastTimer.breakCount / 4)) * 5) + (Math.trunc(lastTimer.breakCount / 4)) * 15,
       };
-      console.log('-----------------------------------');
-      console.log(pomodoroTime);
-      console.log('000000000000000000000000');
-      console.log(breakTime);
-      console.log('000000000000000000000000');
-      console.log(todayStudy);
-      console.log('-----------------------------------');
 
       msg.channel.send(`
 ${todayStudy ? todayStudy.pomodoroTime !== 0 ? `
