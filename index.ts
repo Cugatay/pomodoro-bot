@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-console */
 import Discord from 'discord.js';
@@ -196,14 +197,19 @@ client.on('message', async (msg) => {
       const counterMessage = await msg.channel.send('Pomodoro 25:00');
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
+      // const remainder = 5 % 4;
 
       const counterInterval = setInterval(() => {
         const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
+        const remainder = channel?.timers[channel.timers.length - 1].pomodoroCount! !== 0
+        && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
+        console.log('remainder: ', remainder);
+        console.log('pomodoro count: ', channel?.timers[channel.timers.length - 1].pomodoroCount);
 
         if (!isFinished) {
           if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
             mode = channel?.timers[channel.timers.length - 1].status.code!;
-            willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : 5, 'minutes').toDate().getTime();
+            willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : remainder ? 15 : 5, 'minutes').toDate().getTime();
           }
           const remaining = willFinish - Date.now();
           counterMessage.edit(`${mode} ${moment(remaining).minute()}:${moment(remaining).second()}`);
