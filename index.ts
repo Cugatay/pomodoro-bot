@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-nested-ternary */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-console */
@@ -220,10 +221,25 @@ client.on('message', async (msg) => {
       const m = moment(elapsed);
 
       msg.reply(`${mode === 'pomodoro' ? 'Pomodoro' : 'Mola'} başlayalı ${m.minute()} dakika ${m.second()} saniye geçmiş!`);
-      // msg.reply(timer.startedAt.getTime());
+    } else if (command === 'yardim') {
+      // \`!ptduraklat:\` Çalışan zamanlayıcıyı duraklat
+      // \`!ptdevam:\` Duraklamış zamanlayıcıyı devam ettir
+      // \`!ptstat:\` Bugün, bu hafta ve hatta bu ay ne kadar çalıştığını gör! Eğer devam eden bir zamanlayıcı varsa kaç saattir çalıştığını, kaç pomodoro bitirdiğini, ne kadar ara verdiğini görebilirsin!
 
-      // const remainder = timer.pomodoroCount! !== 0
-      // && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
+      const exampleEmbed = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setAuthor('PT Bot', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+        .setTitle('İşte Bütün Komutlar')
+        .setDescription(`
+\`!ptbasla :\`  Yeni bir sayaç başlat
+\`!ptbitir :\`  Devam eden sayacı bitir
+\`!ptkalan :\`  Kaç dakika kaldığına bak (Zaten otomatik olarak bunu bildiriyoruz)
+\`!ptgecen :\`  Kaç dakika geçtiğine bak
+\`!ptyardim:\`  Bence bunun ne olduğunu zaten biliyorsun :)
+        `);
+      msg.channel.send(exampleEmbed);
+    } else {
+      msg.channel.send('Yanlış bir komut girdin. Eğer kaybolmuş hissediyorsan `!ptyardim` yazarak yardım alabilirsin!');
     }
   }
 });
