@@ -40,41 +40,8 @@ client.on('message', async (msg) => {
       .substring(PREFIX!.length)
       .split(/\s+/);
 
-    // const Interval = (channel: any) => {
-    //   const interval = setInterval(() => {
-    //     const timer = channel?.timers[channel.timers.length - 1];
-
-    //     if (timer!.status.code === 'pomodoro') {
-    //       timer!.pomodoroCount = timer!.pomodoroCount + 1;
-    //     } else {
-    //       timer!.breakCount = timer!.breakCount + 1;
-    //     }
-
-    //     timer!.status.code = timer!.status.code === 'pomodoro' ? 'break' : 'pomodoro';
-    //     timer!.status.startedAt = new Date();
-
-    //     channel?.save();
-    //     msg.channel.send('Ara zamanı');
-
-    //     setTimeout(() => {
-    //       if (timer!.status.code === 'pomodoro') {
-    //       timer!.pomodoroCount = timer!.pomodoroCount + 1;
-    //       } else {
-    //       timer!.breakCount = timer!.breakCount + 1;
-    //       }
-
-    //     timer!.status.code = timer!.status.code === 'pomodoro' ? 'break' : 'pomodoro';
-    //     timer!.status.startedAt = new Date();
-
-    //     channel?.save();
-    //     msg.channel.send('Ders zamanı');
-    //     }, 5000);
-    //   }, 15000);
-
-    //   const clear = () => clearInterval(interval);
-
-    //   return { interval, clear };
-    // };
+    // const studyTime = Number(args[0]) || 25;
+    // console.log('sttime', studyTime);
 
     // ALL COMMANDS
     if (command === 'basla') { // StartTimer(msg);
@@ -106,20 +73,7 @@ client.on('message', async (msg) => {
         channel = newChannel;
       }
 
-      // const deneme = await msg.channel.send('selam');
       msg.reply('okeyy');
-      // (await deneme).edit('naber');
-      // setTimeout(() => {
-      // }, 1000);
-
-      // const takeLongBreak = () => {
-      //   const longBreakInterval =  setTimeout(() => {
-
-      //   }, 10000);
-      // }
-
-      // while (true) {
-      // }
 
       const mainIntervalFunction = async () => {
         const timer = channel?.timers[channel.timers.length - 1];
@@ -197,7 +151,6 @@ client.on('message', async (msg) => {
       const counterMessage = await msg.channel.send('Pomodoro 25:00');
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
-      // const remainder = 5 % 4;
 
       const counterInterval = setInterval(() => {
         const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
@@ -222,9 +175,55 @@ client.on('message', async (msg) => {
       const timer = channel?.timers[channel.timers.length - 1];
       timer!.finishedAt = new Date();
       channel?.save();
-      // Interval(channel).clear();
 
       msg.reply('ok');
+    } else if (command === 'kalan') {
+      const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
+
+      if (!channel) {
+        msg.reply('Henüz hiç pomodoro başlatılmamış. !ptbasla diyerek ilk pomodorona başlayabilirsin!');
+        return;
+      }
+
+      const timer = channel?.timers[channel.timers.length - 1];
+      if (!timer || timer.finishedAt) {
+        msg.reply('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        return;
+      }
+
+      const mode = timer.status.code;
+
+      const remainder = timer.pomodoroCount! !== 0
+      && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
+
+      const willFinish = moment(timer.status.startedAt).add(mode === 'pomodoro' ? 25 : remainder ? 15 : 5, 'minutes').toDate().getTime();
+      const remaining = willFinish - Date.now();
+      const m = moment(remaining);
+
+      msg.reply(`${mode === 'pomodoro' ? "Pomodoro'nun" : 'Molanın'} bitmesine ${m.minute()} dakika ${m.second()} saniye var`);
+    } else if (command === 'gecen') {
+      const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
+
+      if (!channel) {
+        msg.reply('Henüz hiç pomodoro başlatılmamış. !ptbasla diyerek ilk pomodorona başlayabilirsin!');
+        return;
+      }
+
+      const timer = channel?.timers[channel.timers.length - 1];
+      if (!timer || timer.finishedAt) {
+        msg.reply('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        return;
+      }
+
+      const mode = timer.status.code;
+      const elapsed = Date.now() - timer.status.startedAt.getTime();
+      const m = moment(elapsed);
+
+      msg.reply(`${mode === 'pomodoro' ? 'Pomodoro' : 'Mola'} başlayalı ${m.minute()} dakika ${m.second()} saniye geçmiş!`);
+      // msg.reply(timer.startedAt.getTime());
+
+      // const remainder = timer.pomodoroCount! !== 0
+      // && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
     }
   }
 });
