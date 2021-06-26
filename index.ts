@@ -120,6 +120,7 @@ client.on('message', async (msg) => {
 
         console.log(isFinished);
         if (isFinished) {
+          channel = channelData;
           clearInterval(inter);
         } else {
           if (timer!.status.code === 'pomodoro') {
@@ -158,13 +159,20 @@ client.on('message', async (msg) => {
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
 
-      setInterval(() => {
-        if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
-          mode = channel?.timers[channel.timers.length - 1].status.code!;
-          willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : 5, 'minutes').toDate().getTime();
+      const counterInterval = setInterval(() => {
+        const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
+        console.log(isFinished);
+
+        if (!isFinished) {
+          if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
+            mode = channel?.timers[channel.timers.length - 1].status.code!;
+            willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : 5, 'minutes').toDate().getTime();
+          }
+          const remaining = willFinish - Date.now();
+          counterMessage.edit(`${mode} ${moment(remaining).minute()}:${moment(remaining).second()}`);
+        } else {
+          clearInterval(counterInterval);
         }
-        const remaining = willFinish - Date.now();
-        counterMessage.edit(`${mode} ${moment(remaining).minute()}:${moment(remaining).second()}`);
       }, 3000);
     } else if (command === 'bitir') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
