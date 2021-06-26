@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import Discord from 'discord.js';
+import moment from 'moment';
 import mongoose from 'mongoose';
 // import moment from 'moment';
 // import { clearInterval } from 'timers';
@@ -153,22 +154,18 @@ client.on('message', async (msg) => {
         }
       }, 15000);
 
-      // setTimeout(async () => {
-      //   const m = moment(newTimer.startedAt).add(25, 'minutes').locale('tr');
-      //   const counter = await msg.channel.send(`${m.fromNow()} pomodoro bitecek`);
+      const counterMessage = await msg.channel.send('Pomodoro 25:00');
+      let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
+      let mode = channel?.timers[channel.timers.length - 1].status.code;
 
-      //   const editInterval = setInterval(async () => {
-      //     const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
-
-      //     const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
-
-      //     if (!isFinished) {
-      //       counter.edit(`${m.fromNow()} pomodoro bitecek`);
-      //     } else {
-      //       clearInterval(editInterval);
-      //     }
-      //   });
-      // }, 5000);
+      setInterval(() => {
+        if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
+          mode = channel?.timers[channel.timers.length - 1].status.code!;
+          willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : 5, 'minutes').toDate().getTime();
+        }
+        const remaining = willFinish - Date.now();
+        counterMessage.edit(`${mode} ${moment(remaining).minute()}:${moment(remaining).second()}`);
+      }, 3000);
     } else if (command === 'bitir') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
       const timer = channel?.timers[channel.timers.length - 1];
