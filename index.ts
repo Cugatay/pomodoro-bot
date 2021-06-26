@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 /* eslint-disable no-console */
 import Discord from 'discord.js';
 import moment from 'moment';
@@ -77,7 +78,6 @@ client.on('message', async (msg) => {
     // ALL COMMANDS
     if (command === 'basla') { // StartTimer(msg);
       let channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
-      console.log(channel);
 
       const newTimer = {
         startedAt: new Date(),
@@ -111,14 +111,22 @@ client.on('message', async (msg) => {
       // setTimeout(() => {
       // }, 1000);
 
-      const inter = setInterval(async () => {
+      // const takeLongBreak = () => {
+      //   const longBreakInterval =  setTimeout(() => {
+
+      //   }, 10000);
+      // }
+
+      // while (true) {
+      // }
+
+      const mainIntervalFunction = async () => {
         const timer = channel?.timers[channel.timers.length - 1];
 
         const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
         const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
 
-        console.log(isFinished);
         if (isFinished) {
           channel = channelData;
           clearInterval(inter);
@@ -133,27 +141,57 @@ client.on('message', async (msg) => {
         timer!.status.startedAt = new Date();
 
         await channel?.save();
-        msg.channel.send('Ara zamanı');
 
-        setTimeout(async () => {
-          const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
-          const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
-          if (!isFinished) {
-            if (timer!.status.code === 'pomodoro') {
+        if (timer!.pomodoroCount % 4 === 0) {
+          msg.channel.send('Uzun Ara zamanı');
+
+          setTimeout(async () => {
+            clearInterval(inter);
+            const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
+            const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
+            if (!isFinished) {
+              if (timer!.status.code === 'pomodoro') {
             timer!.pomodoroCount = timer!.pomodoroCount + 1;
-            } else {
+              } else {
             timer!.breakCount = timer!.breakCount + 1;
-            }
+              }
 
             timer!.status.code = timer!.status.code === 'pomodoro' ? 'break' : 'pomodoro';
             timer!.status.startedAt = new Date();
 
             channel?.save();
-            msg.channel.send('Ders zamanı');
-          }
-        }, 5000);
+            // msg.channel.send('Ders zamanı');
+            msg.channel.send(`${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
+            inter = setInterval(mainIntervalFunction, 15000);
+            } else {
+              channel = channelData;
+            }
+          }, 10000);
+        } else {
+          msg.channel.send('Ara zamanı');
+
+          setTimeout(async () => {
+            const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
+            const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
+            if (!isFinished) {
+              if (timer!.status.code === 'pomodoro') {
+            timer!.pomodoroCount = timer!.pomodoroCount + 1;
+              } else {
+            timer!.breakCount = timer!.breakCount + 1;
+              }
+
+            timer!.status.code = timer!.status.code === 'pomodoro' ? 'break' : 'pomodoro';
+            timer!.status.startedAt = new Date();
+
+            channel?.save();
+            // msg.channel.send('Ders zamanı');
+            msg.channel.send(`${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
+            }
+          }, 5000);
         }
-      }, 15000);
+        }
+      };
+      let inter = setInterval(mainIntervalFunction, 15000);
 
       const counterMessage = await msg.channel.send('Pomodoro 25:00');
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
@@ -161,7 +199,6 @@ client.on('message', async (msg) => {
 
       const counterInterval = setInterval(() => {
         const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
-        console.log(isFinished);
 
         if (!isFinished) {
           if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
