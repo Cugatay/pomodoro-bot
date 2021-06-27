@@ -5,20 +5,19 @@
 import Discord from 'discord.js';
 import moment from 'moment';
 import mongoose from 'mongoose';
-// import moment from 'moment';
-// import { clearInterval } from 'timers';
 
 import ChannelModel from './models/ChannelModel';
-
-// Functions
-// const StartTimer = require('./functions/StartTimer');
 
 const client = new Discord.Client();
 
 require('dotenv').config();
 
-// const PREFIX = '!pt';
 const { TOKEN, PREFIX, MONGO_DB_URL } = process.env;
+
+const workTime = 10000;
+const breakTime = 5000;
+const longBreakTime = 10000;
+const counterDelay = 2000;
 
 mongoose.connect(MONGO_DB_URL!, {
   useNewUrlParser: true,
@@ -71,7 +70,7 @@ client.on('message', async (msg) => {
         channel = newChannel;
       }
 
-      let counterMessage = await msg.channel.send('Pomodoro Başladı! `25:00`');
+      const counterMessage = await msg.channel.send('Pomodoro Başladı! `25:00`');
 
       const mainIntervalFunction = async () => {
         const timer = channel?.timers[channel.timers.length - 1];
@@ -82,7 +81,6 @@ client.on('message', async (msg) => {
 
         if (isFinished) {
           channel = channelData;
-          clearInterval(inter);
         } else {
           if (timer!.status.code === 'pomodoro') {
           timer!.pomodoroCount = timer!.pomodoroCount + 1;
@@ -96,10 +94,11 @@ client.on('message', async (msg) => {
         await channel?.save();
 
         if (timer!.pomodoroCount % 4 === 0) {
-          counterMessage = await msg.channel.send('Uzun Bir Ara Verme Vakti! `15:00`');
+          // counterMessage.delete();
+          // counterMessage = await msg.channel.send('💤 Uzun Bir Ara Verme Vakti! `15:00`');
+          msg.channel.send('💤 Uzun Bir Ara Verme Vakti!');
 
           setTimeout(async () => {
-            clearInterval(inter);
             const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
             const isFinished = !!channelData?.timers[channelData.timers.length - 1].finishedAt;
             if (!isFinished) {
@@ -114,14 +113,14 @@ client.on('message', async (msg) => {
 
             channel?.save();
             // msg.channel.send('Ders zamanı');
-            msg.channel.send(`${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
-            inter = setInterval(mainIntervalFunction, 15000);
+            msg.channel.send(`📒 ${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
+            setTimeout(mainIntervalFunction, workTime);
             } else {
               channel = channelData;
             }
-          }, 10000);
+          }, longBreakTime);
         } else {
-          msg.channel.send('Ara zamanı');
+          msg.channel.send('☕️ Ara zamanı');
 
           setTimeout(async () => {
             const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
@@ -136,15 +135,16 @@ client.on('message', async (msg) => {
             timer!.status.code = timer!.status.code === 'pomodoro' ? 'break' : 'pomodoro';
             timer!.status.startedAt = new Date();
 
-            channel?.save();
+            await channel?.save();
             // msg.channel.send('Ders zamanı');
-            msg.channel.send(`${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
+            msg.channel.send(`📒 ${timer!.pomodoroCount + 1}. Pomodoroya Başlama Zamanı`);
             }
-          }, 5000);
+            setTimeout(mainIntervalFunction, workTime);
+          }, breakTime);
         }
         }
       };
-      let inter = setInterval(mainIntervalFunction, 15000);
+      setTimeout(mainIntervalFunction, workTime);
 
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
@@ -165,27 +165,37 @@ client.on('message', async (msg) => {
         } else {
           clearInterval(counterInterval);
         }
-      }, 3000);
+      }, counterDelay);
     } else if (command === 'bitir') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
+
+      if (!channel) {
+        msg.reply(`Henüz hiç pomodoro başlatılmamış. \`${PREFIX}basla\` diyerek ilk pomodorona başlayabilirsin!`);
+        return;
+      }
+
       const timer = channel?.timers[channel.timers.length - 1];
+
+      if (!timer || timer.finishedAt) {
+        msg.reply(`Henüz başlatılmış bir pomodoro yok. \`${PREFIX}basla\` diyerek yeni bir pomodoroya başlayabilirsin!`);
+        return;
+      }
+
       timer!.finishedAt = new Date();
       channel?.save();
 
-      msg.reply('ok');
-    } else if (command === 'duraklat') {
-      msg.reply('ok');
+      msg.channel.send('Güzel Çalışmaydı!');
     } else if (command === 'kalan') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
       if (!channel) {
-        msg.reply('Henüz hiç pomodoro başlatılmamış. !ptbasla diyerek ilk pomodorona başlayabilirsin!');
+        msg.reply(`Henüz hiç pomodoro başlatılmamış. \`${PREFIX}basla\` diyerek ilk pomodorona başlayabilirsin!`);
         return;
       }
 
       const timer = channel?.timers[channel.timers.length - 1];
       if (!timer || timer.finishedAt) {
-        msg.reply('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        msg.reply(`Henüz başlatılmış bir pomodoro yok. \`${PREFIX}basla\` diyerek yeni bir pomodoroya başlayabilirsin!`);
         return;
       }
 
@@ -203,13 +213,13 @@ client.on('message', async (msg) => {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
       if (!channel) {
-        msg.reply('Henüz hiç pomodoro başlatılmamış. !ptbasla diyerek ilk pomodorona başlayabilirsin!');
+        msg.reply(`Henüz hiç pomodoro başlatılmamış. \`${PREFIX}basla\` diyerek ilk pomodorona başlayabilirsin!`);
         return;
       }
 
       const timer = channel?.timers[channel.timers.length - 1];
       if (!timer || timer.finishedAt) {
-        msg.reply('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        msg.reply(`Henüz başlatılmış bir pomodoro yok. \`${PREFIX}basla\` diyerek yeni bir pomodoroya başlayabilirsin!`);
         return;
       }
 
@@ -219,10 +229,6 @@ client.on('message', async (msg) => {
 
       msg.reply(`${mode === 'pomodoro' ? 'Pomodoro' : 'Mola'} başlayalı ${m.minute()} dakika ${m.second()} saniye geçmiş!`);
     } else if (command === 'yardim') {
-      // \`!ptduraklat:\` Çalışan zamanlayıcıyı duraklat
-      // \`!ptdevam:\` Duraklamış zamanlayıcıyı devam ettir
-      // \`!ptstat:\` Bugün, bu hafta ve hatta bu ay ne kadar çalıştığını gör! Eğer devam eden bir zamanlayıcı varsa kaç saattir çalıştığını, kaç pomodoro bitirdiğini, ne kadar ara verdiğini görebilirsin!
-
       const embedMessage = new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setAuthor('PT Bot', 'https://i.imgur.com/wSTFkRM.png')
@@ -232,6 +238,7 @@ client.on('message', async (msg) => {
 \`!ptbitir :\`  Devam eden sayacı bitir
 \`!ptkalan :\`  Kaç dakika kaldığına bak (Zaten otomatik olarak bunu bildiriyoruz)
 \`!ptgecen :\`  Kaç dakika geçtiğine bak
+\`!ptstat  :\` Bugün, bu hafta ve hatta bu ay ne kadar çalıştığını gör! Eğer devam eden bir zamanlayıcı varsa kaç saattir çalıştığını, kaç pomodoro bitirdiğini, ne kadar ara verdiğini görebilirsin!
 \`!ptyardim:\`  Bence bunun ne olduğunu zaten biliyorsun :)
         `);
       msg.channel.send(embedMessage);
@@ -239,14 +246,14 @@ client.on('message', async (msg) => {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
       if (!channel) {
-        msg.channel.send('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        msg.channel.send(`Henüz başlatılmış bir pomodoro yok. \`${PREFIX}basla\` diyerek yeni bir pomodoroya başlayabilirsin!`);
         return;
       }
 
       const lastTimer = channel.timers[channel.timers.length - 1];
 
       if (!lastTimer) {
-        msg.channel.send('Henüz başlatılmış bir pomodoro yok. !ptbasla diyerek yeni bir pomodoroya başlayabilirsin!');
+        msg.channel.send(`Henüz başlatılmış bir pomodoro yok. \`${PREFIX}basla\` diyerek yeni bir pomodoroya başlayabilirsin!`);
         return;
       }
 
@@ -323,7 +330,7 @@ ${pomodoroTime.month ? `
 ` : ''}
       `);
     } else {
-      msg.channel.send('Yanlış bir komut girdin. Eğer kaybolmuş hissediyorsan `!ptyardim` yazarak yardım alabilirsin!');
+      msg.channel.send(`Yanlış bir komut girdin. Eğer kaybolmuş hissediyorsan \`${PREFIX}yardim\` yazarak yardım alabilirsin!`);
     }
   }
 });
