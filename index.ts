@@ -71,6 +71,8 @@ client.on('message', async (msg) => {
         channel = newChannel;
       }
 
+      let counterMessage = await msg.channel.send('Pomodoro Başladı! `25:00`');
+
       const mainIntervalFunction = async () => {
         const timer = channel?.timers[channel.timers.length - 1];
 
@@ -94,7 +96,7 @@ client.on('message', async (msg) => {
         await channel?.save();
 
         if (timer!.pomodoroCount % 4 === 0) {
-          msg.channel.send('Uzun Ara zamanı');
+          counterMessage = await msg.channel.send('Uzun Bir Ara Verme Vakti! `15:00`');
 
           setTimeout(async () => {
             clearInterval(inter);
@@ -144,22 +146,22 @@ client.on('message', async (msg) => {
       };
       let inter = setInterval(mainIntervalFunction, 15000);
 
-      const counterMessage = await msg.channel.send('Pomodoro Başladı! `25:00`');
       let willFinish = moment(channel.timers[channel.timers.length - 1].status.startedAt).add(25, 'minutes').toDate().getTime();
       let mode = channel?.timers[channel.timers.length - 1].status.code;
 
-      const counterInterval = setInterval(() => {
-        const isFinished = !!channel?.timers[channel?.timers.length - 1].finishedAt;
-        const remainder = channel?.timers[channel.timers.length - 1].pomodoroCount! !== 0
-        && channel?.timers[channel.timers.length - 1].pomodoroCount! % 4 === 0;
+      const counterInterval = setInterval(async () => {
+        const channelData = await ChannelModel.findOne({ channel_id: msg.channel.id });
+        const isFinished = !!channelData?.timers[channelData?.timers.length - 1].finishedAt;
+        const remainder = channelData?.timers[channelData.timers.length - 1].pomodoroCount! !== 0
+        && channelData?.timers[channelData.timers.length - 1].pomodoroCount! % 4 === 0;
 
         if (!isFinished) {
-          if (mode !== channel?.timers[channel.timers.length - 1].status.code) {
-            mode = channel?.timers[channel.timers.length - 1].status.code!;
-            willFinish = moment(channel?.timers[channel?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : remainder ? 15 : 5, 'minutes').toDate().getTime();
+          if (mode !== channelData?.timers[channelData.timers.length - 1].status.code) {
+            mode = channelData?.timers[channelData.timers.length - 1].status.code!;
+            willFinish = moment(channelData?.timers[channelData?.timers.length - 1].status.startedAt).add(mode === 'pomodoro' ? 25 : remainder ? 15 : 5, 'minutes').toDate().getTime();
           }
           const remaining = willFinish - Date.now();
-          counterMessage.edit(`${mode === 'pomodoro' ? 'Pomodoro Başladı!' : 'Mola Başladı!'} \`${moment(remaining).minute()}:${moment(remaining).second()}\``);
+          counterMessage.edit(`${mode === 'pomodoro' ? 'Pomodoro Başladı!' : remainder ? 'Uzun Bir Ara Verme Vakti!' : 'Mola Başladı!'} \`${moment(remaining).minute()}:${moment(remaining).second()}\``);
         } else {
           clearInterval(counterInterval);
         }
