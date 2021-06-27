@@ -14,10 +14,10 @@ require('dotenv').config();
 
 const { TOKEN, PREFIX, MONGO_DB_URL } = process.env;
 
-const workTime = 10000;
-const breakTime = 5000;
-const longBreakTime = 10000;
-const counterDelay = 2000;
+const workTime = 25 * 60 * 1000;
+const breakTime = 5 * 60 * 1000;
+const longBreakTime = 15 * 60 * 1000;
+const counterDelay = 10 * 1000;
 
 mongoose.connect(MONGO_DB_URL!, {
   useNewUrlParser: true,
