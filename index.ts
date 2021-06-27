@@ -184,7 +184,8 @@ client.on('message', async (msg) => {
       timer!.finishedAt = new Date();
       channel?.save();
 
-      msg.channel.send('Güzel Çalışmaydı!');
+      const answers = ['Görüşürüz canım 😘', 'Yine bekleriz 👋', 'Bence de bugünlük bu kadar çalışmak yeter, ben de yoruldum 🛌', 'Seni çalışırken izlemek benim için bir şerefti 🤗'];
+      msg.channel.send(answers[Math.floor(Math.random() * answers.length)]);
     } else if (command === 'kalan') {
       const channel = await ChannelModel.findOne({ channel_id: msg.channel.id });
 
@@ -231,7 +232,7 @@ client.on('message', async (msg) => {
     } else if (command === 'yardim') {
       const embedMessage = new Discord.MessageEmbed()
         .setColor('#0099ff')
-        .setAuthor('PT Bot', 'https://i.imgur.com/wSTFkRM.png')
+        .setAuthor('PT Bot', 'https://i.hizliresim.com/tucy4le.png')
         .setTitle('İşte Bütün Komutlar')
         .setDescription(`
 \`!ptbasla :\`  Yeni bir sayaç başlat
@@ -304,7 +305,11 @@ client.on('message', async (msg) => {
         breakTime: ((lastTimer.breakCount - Math.trunc(lastTimer.breakCount / 4)) * 5) + (Math.trunc(lastTimer.breakCount / 4)) * 15,
       };
 
-      msg.channel.send(`
+      const embedMessage = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setAuthor('PT Bot', 'https://i.hizliresim.com/tucy4le.png')
+        .setTitle('Toplam Çalışma Saatlerin')
+        .setDescription(`
 ${todayStudy ? todayStudy.pomodoroTime !== 0 ? `
 **-** Şuan Hala Çalışıyorsun ve \`${lastTimer.pomodoroCount} Set Pomodoro\` Bitirdin!
       -> \`${todayStudy.pomodoroTime} Dakika\` Pomodoro Yaptın -- \`${lastTimer.pomodoroCount} Pomodoro\`
@@ -328,7 +333,34 @@ ${pomodoroTime.month ? `
       -> \`${pomodoroTime.month}\` Saat Pomodoro
       -> \`${breakTime.month}\` Saat Mola
 ` : ''}
-      `);
+        `);
+      msg.channel.send(embedMessage);
+
+      //       msg.channel.send(`
+      // ${todayStudy ? todayStudy.pomodoroTime !== 0 ? `
+      // **-** Şuan Hala Çalışıyorsun ve \`${lastTimer.pomodoroCount} Set Pomodoro\` Bitirdin!
+      //       -> \`${todayStudy.pomodoroTime} Dakika\` Pomodoro Yaptın -- \`${lastTimer.pomodoroCount} Pomodoro\`
+      //       -> \`${todayStudy.breakTime} Dakika\` Mola Verdin -- \`${lastTimer.breakCount} Mola\`
+      // **-> Toplamda ${todayStudy.pomodoroTime + todayStudy.breakTime} Saattir Çalışıyorsun! <-**
+      // ` : `
+      // **-** \`Şuan Hala Çalışıyorsun, İlk Pomodoronu Bitirince Ne Kadar Çalıştığını Buradan Görebileceksin! Böyle Devam!\`
+      // ` : ''}
+      // ${pomodoroTime.day ? `
+      // **-** Bugün **${pomodoroTime.day + breakTime.day}** Saat Çalıştın
+      //       -> \`${pomodoroTime.day}\` Saat pomodoro
+      //       -> \`${breakTime.day}\` Saat mola
+      // ` : ''}
+      // ${pomodoroTime.week ? `
+      // **-** Bu Hafta **${pomodoroTime.week + breakTime.week}** Saat Çalıştın
+      //       -> \`${pomodoroTime.week}\` Saat pomodoro
+      //       -> \`${breakTime.week}\` Saat mola
+      // ` : ''}
+      // ${pomodoroTime.month ? `
+      // **-** Bu Ay **${pomodoroTime.month + breakTime.month}** Saat Çalıştın
+      //       -> \`${pomodoroTime.month}\` Saat Pomodoro
+      //       -> \`${breakTime.month}\` Saat Mola
+      // ` : ''}
+      //       `);
     } else {
       msg.channel.send(`Yanlış bir komut girdin. Eğer kaybolmuş hissediyorsan \`${PREFIX}yardim\` yazarak yardım alabilirsin!`);
     }
